@@ -5,3 +5,6 @@ authors = ["Ilya Staheev <ilya.staheev@klarna.com>"]
 
 [lib]
 crate-type = ["staticlib"]
+
+[dependencies]
+rlibc = "*"

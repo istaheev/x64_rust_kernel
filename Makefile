@@ -25,6 +25,7 @@ CFLAGS = -g                   \
 
 LDFLAGS = -n                      \
 	      -nostdlib               \
+	      --gc-sections           \
 		  -z max-page-size=0x1000
 
 # Rules

@@ -1,11 +1,18 @@
 #![feature(no_std, lang_items)]
 #![no_std]
 
+extern crate rlibc;
+
 #[no_mangle]
 pub extern fn kernel_main() {
-    let mut vp = 0xb8000 as *mut u8;
-    unsafe {
-        *vp = 'A' as u8;
+    let vga = 0xb8000 as *mut u8;
+    let message = b"Hello, world!";
+    let mut offset = 0;
+    for b in message {
+        unsafe {
+            *vga.offset(offset) = *b;
+            offset = offset + 2;
+        }
     }
     loop {}
 }
