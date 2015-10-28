@@ -1,2 +1,2 @@
 #!/bin/sh
-qemu-system-x86_64 -m 512M -cdrom build/image.iso -net none -no-reboot -d int -s
+qemu-system-x86_64 -m 512M -cdrom build/image.iso -net none -no-reboot -d int,guest_errors -s

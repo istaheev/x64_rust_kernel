@@ -127,6 +127,21 @@ code_64:
 
         movq    $(boot_kernel_stack + KERNEL_STACK_SIZE), %rsp
 
+/* Enable SSE (assuming the CPU supports it) */
+
+        mov     $0x1, %rax
+        cpuid
+        test    $(1<<25), %edx
+        jz      halt
+
+        mov     %cr0, %rax
+        and     $0xFFFB, %ax       /* clear coprocessor emulation CR0.EM */
+        or      $0x2, %ax          /* set coprocessor monitoring  CR0.MP */
+        mov     %rax, %cr0
+        mov     %cr4, %rax
+        or      $(3 << 9), %ax     /* set CR4.OSFXSR and CR4.OSXMMEXCPT at the same time */
+        mov     %rax, %cr4
+
 /* Call kernel entry point located in the higher half memory */
 
         // rbx points to multiboot info structure, pass it as the first parameter to kmain

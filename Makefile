@@ -51,6 +51,7 @@ prepare:
 	mkdir -p build/arch/$(ARCH)
 
 clean:
+	cargo clean
 	-rm -rf build
 
 all: clean prepare image
