@@ -37,7 +37,7 @@ image: build/kernel image/boot/grub/grub.cfg
 	grub2-mkrescue -o build/image.iso build/image
 
 # Link the kernel
-build/kernel: rust Makefile $(LINKER_LD) $(ASM_OBJS)
+build/kernel: prepare rust Makefile $(LINKER_LD) $(ASM_OBJS)
 	ld $(LDFLAGS) -T $(LINKER_LD) -Map build/kernel.map -o build/kernel $(ASM_OBJS) $(RUST_KERNEL)
 
 # Compile assembler files
@@ -45,7 +45,7 @@ $(ASM_OBJS): $(ASM_SRC)
 	$(CC) $(CFLAGS) -I$(INCLUDE_DIR) -c $< -o $@
 
 rust:
-	cargo rustc --target $(RUST_TARGET) -- -Z no-landing-pads
+	cargo rustc --target $(RUST_TARGET) -- -Z no-landing-pads -C target-feature=-sse3,-ssse3,-sse4.1,-sse4.2,-3dnow,-3dnowa,-avx,-avx2
 
 prepare:
 	mkdir -p build/arch/$(ARCH)

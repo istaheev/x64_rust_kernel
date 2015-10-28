@@ -19,14 +19,14 @@ SECTIONS
 
     .text ALIGN(0x1000) : AT(ADDR(.text) - KERNEL_VMA)
     {
-        *(.text)
+        *(.text.*)
         *(EXCLUDE_FILE(*/bootstrap.o) .text)
-        *(.rodata)
+        *(.rodata.*)
     }
 
     .data ALIGN(0x1000) : AT(ADDR(.data) - KERNEL_VMA)
     {
-        *(.data)
+        *(.data.*)
     }
 
     __link_load_end = . - KERNEL_VMA;

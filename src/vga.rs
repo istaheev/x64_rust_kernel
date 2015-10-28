@@ -97,7 +97,7 @@ impl TextBuffer {
     }
 
     fn get_offset(&self, column: u8, row: u8) -> *mut CharWithColor {
-        (self.ptr + (self.width as usize) * (row as usize) + (column as usize)) as *mut _
+        (self.ptr + (self.width as usize) * (row as usize) * 2 + (column as usize) * 2) as *mut _
     }
 }
 
@@ -117,7 +117,7 @@ impl Terminal {
         let fg_color = self.fg_color;
         let bg_color = self.bg_color;
         self.buffer.set_char_and_color(ascii, column, row, fg_color, bg_color);
-        //self.advance_cursor();
+        self.advance_cursor();
     }
 
     fn advance_cursor(&mut self) {

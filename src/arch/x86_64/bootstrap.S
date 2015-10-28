@@ -125,7 +125,7 @@ code_64:
 
 /* Initialize the kernel stack */
 
-        movq    $(boot_kernel_stack + KERNEL_STACK_SIZE), %rsp
+        movq    $(boot_kernel_stack + BOOT_KERNEL_STACK_SIZE), %rsp
 
 /* Enable SSE (assuming the CPU supports it) */
 

@@ -3,22 +3,21 @@
 #![feature(const_fn)]
 #![feature(core_str_ext)]
 #![feature(core_slice_ext)]
+#![feature(asm)]
 #![no_std]
 
 extern crate rlibc;
 extern crate spin;
 
+mod bochs;
 mod vga;
 
 use core::fmt::Write;
 
 #[no_mangle]
 pub extern fn kernel_main() -> ! {
+    bochs::magic_break();
     vga::CONSOLE.lock().write_str("Hello, World!").unwrap();
-
-    //let ab = core::sync::atomic::AtomicBool::new(true);
-    //ab.compare_and_swap(true, false, core::sync::atomic::Ordering::SeqCst);
-
     halt();
 }
 
@@ -31,5 +30,6 @@ fn halt() -> ! {
         }
     }
 }
+
 #[lang = "eh_personality"] extern fn eh_personality() {}
 #[lang = "panic_fmt"] extern fn panic_fmt() -> ! {loop{}}
