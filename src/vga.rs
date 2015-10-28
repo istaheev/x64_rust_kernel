@@ -111,24 +111,36 @@ pub struct Terminal {
 }
 
 impl Terminal {
+    pub fn buffer(&mut self) -> &mut TextBuffer {
+        &mut self.buffer
+    }
+
     pub fn write_ascii(&mut self, ascii: u8) {
-        let column = self.column;
-        let row = self.row;
-        let fg_color = self.fg_color;
-        let bg_color = self.bg_color;
-        self.buffer.set_char_and_color(ascii, column, row, fg_color, bg_color);
-        self.advance_cursor();
+        if ascii == b'\n' {
+            self.cr_lf();
+        } else {
+            let column = self.column;
+            let row = self.row;
+            let fg_color = self.fg_color;
+            let bg_color = self.bg_color;
+            self.buffer.set_char_and_color(ascii, column, row, fg_color, bg_color);
+            self.advance_cursor();
+        }
+    }
+
+    pub fn cr_lf(&mut self) {
+        self.column = 0;
+        if self.row >= self.buffer.height-1 {
+            self.buffer.scroll_up();
+        } else {
+            self.row = self.row + 1;
+        }
     }
 
     fn advance_cursor(&mut self) {
         self.column = self.column + 1;
         if self.column >= self.buffer.width - 1 {
-            self.column = 0;
-            if self.row >= self.buffer.height-1 {
-                self.buffer.scroll_up();
-            } else {
-                self.row = self.row + 1;
-            }
+            self.cr_lf();
         }
     }
 }
@@ -145,4 +157,16 @@ impl ::core::fmt::Write for Terminal {
         self.write_ascii(c as u8);
         Ok(())
     }
+}
+
+macro_rules! println {
+    ($fmt:expr) => (print!(concat!($fmt, "\n")));
+    ($fmt:expr, $($arg:tt)*) => (print!(concat!($fmt, "\n"), $($arg)*));
+}
+
+macro_rules! print {
+    ($($arg:tt)*) => ({
+            use ::core::fmt::Write;
+            $crate::vga::CONSOLE.lock().write_fmt(format_args!($($arg)*)).unwrap();
+    });
 }

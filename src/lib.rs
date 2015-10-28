@@ -10,24 +10,32 @@ extern crate rlibc;
 extern crate spin;
 
 mod bochs;
+#[macro_use]
 mod vga;
 
-use core::fmt::Write;
+extern {
+    static __link_kernel_begin_vaddr: u8;
+    static __link_kernel_end_vaddr: u8;
+    static __link_load_end: u8;
+    static __link_bss_end: u8;
+}
 
 #[no_mangle]
 pub extern fn kernel_main() -> ! {
     bochs::magic_break();
-    vga::CONSOLE.lock().write_str("Hello, World!").unwrap();
+    println!("Kernel placement: {:?} - {:?}", &__link_kernel_begin_vaddr as *const u8, &__link_kernel_end_vaddr as *const u8);
     halt();
 }
 
 fn halt() -> ! {
-    let syms = [b'|', b'/', b'-', b'\\'];
-    let video = 0xb8000 as *mut u8;
+    let syms = b"|\\-//||\\-//";
+    let mut pos = 0;
     loop {
-        for s in syms.iter() {
-            unsafe { *video = *s; };
+        for (i,s) in syms.iter().enumerate() {
+            let column = (pos + i) % syms.len();
+            vga::CONSOLE.lock().buffer().set_char_and_color(*s, column as u8, 0, vga::Color::Yellow, vga::Color::Black);
         }
+        pos = pos + 1;
     }
 }
 
