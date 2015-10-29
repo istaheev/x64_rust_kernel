@@ -9,10 +9,13 @@
 extern crate rlibc;
 extern crate spin;
 
+mod bits;
 mod bochs;
 #[macro_use]
 mod vga;
+mod cpuid;
 
+// Symbols from linker
 extern {
     static __link_kernel_begin_vaddr: u8;
     static __link_kernel_end_vaddr: u8;
@@ -23,7 +26,21 @@ extern {
 #[no_mangle]
 pub extern fn kernel_main() -> ! {
     bochs::magic_break();
+
+    println!("");
     println!("Kernel placement: {:?} - {:?}", &__link_kernel_begin_vaddr as *const u8, &__link_kernel_end_vaddr as *const u8);
+
+    println!("");
+    println!("== CPU ==");
+    let vendor_id = cpuid::get_vendor_id();
+    println!("Vendor: {}.", unsafe { ::core::str::from_utf8_unchecked(&vendor_id.vendor) });
+    println!("CPUID: max basic function 0x{:x}, max extended function 0x{:x}.", vendor_id.max_basic_func, vendor_id.max_extended_func);
+
+    if vendor_id.is_processor_info_available() {
+        let cpu_info = cpuid::get_processor_info();
+    }
+
+    println!("Bits test:");
     halt();
 }
 
