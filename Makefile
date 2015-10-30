@@ -28,6 +28,9 @@ LDFLAGS = -n                      \
 	      --gc-sections           \
 		  -z max-page-size=0x1000
 
+CARGOFLAGS.debug =
+CARGOFLAGS.release = --release
+CARGOFLAGS = --target $(RUST_TARGET) ${CARGOFLAGS.${CONFIG}}
 # Rules
 
 image: build/kernel image/boot/grub/grub.cfg
@@ -45,7 +48,7 @@ $(ASM_OBJS): $(ASM_SRC)
 	$(CC) $(CFLAGS) -I$(INCLUDE_DIR) -c $< -o $@
 
 rust:
-	cargo rustc --target $(RUST_TARGET) -- -Z no-landing-pads -C target-feature=-sse3,-ssse3,-sse4.1,-sse4.2,-3dnow,-3dnowa,-avx,-avx2
+	cargo rustc $(CARGOFLAGS) -- -Z no-landing-pads -C target-feature=-sse3,-ssse3,-sse4.1,-sse4.2,-3dnow,-3dnowa,-avx,-avx2
 
 prepare:
 	mkdir -p build/arch/$(ARCH)
