@@ -15,6 +15,7 @@ mod bochs;
 #[macro_use]
 mod vga;
 mod cpuid;
+mod paging;
 
 // Symbols from linker
 extern {
@@ -47,6 +48,8 @@ pub extern fn kernel_main() -> ! {
         print!("CPU flags: ");
         cpuid::print_cpu_features(cpu_info.features2, cpuid::CPU_FEATURES2_MAP);
     }
+
+    paging::paging_tests();
 
     halt();
 }
