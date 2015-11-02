@@ -12,10 +12,13 @@ extern crate spin;
 
 mod bits;
 mod bochs;
+mod multiboot;
 #[macro_use]
 mod vga;
 mod cpuid;
 mod paging;
+
+use multiboot::PhysicalMemoryMap;
 
 // Symbols from linker
 extern {
@@ -26,7 +29,7 @@ extern {
 }
 
 #[no_mangle]
-pub extern fn kernel_main() -> ! {
+pub extern fn kernel_main(multiboot_info_ptr: *const multiboot::Info) -> ! {
     //bochs::magic_break();
 
     println!("");
@@ -35,6 +38,10 @@ pub extern fn kernel_main() -> ! {
     println!("Running tests..");
     bits::tests();
     println!("Tests passed successfully.");
+
+    /*
+     * Displaying CPU information
+     */
 
     let vendor_id = cpuid::get_vendor_id();
     println!("CPU vendor: {}.", unsafe { ::core::str::from_utf8_unchecked(&vendor_id.vendor) });
@@ -49,9 +56,35 @@ pub extern fn kernel_main() -> ! {
         cpuid::print_cpu_features(cpu_info.features2, cpuid::CPU_FEATURES2_MAP);
     }
 
-    paging::paging_tests();
+    /*
+     * Displaying information from multiboot
+     */
+    display_multiboot_info(multiboot_info_ptr);
 
     halt();
+}
+
+fn display_multiboot_info(multiboot_info_ptr: *const multiboot::Info) {
+    println!("Multiboot info located at {:?}.", multiboot_info_ptr);
+
+    bochs::magic_break();
+
+    let multiboot_info = unsafe { &*multiboot_info_ptr };
+
+    if multiboot_info.is_memory_size_available() {
+        println!("Lower memory: {} bytes; Upper: {} bytes.", multiboot_info.get_lower_memory(), multiboot_info.get_upper_memory());
+    } else {
+        println!("No memory size available from multiboot.");
+    }
+
+    if multiboot_info.is_memory_map_available() {
+        println!("Memory map:");
+        for region in multiboot_info.memory_regions_iter() {
+            println!("0x{:016x} - 0x{:016x} ({} bytes): {:?}", region.address, region.address + region.length - 1, region.length, region.region_type);
+        }
+    } else {
+        println!("No memory map available from multiboot.");
+    }
 }
 
 fn halt() -> ! {

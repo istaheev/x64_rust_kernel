@@ -1,7 +1,6 @@
 #define ASM_FILE 1
 
 #include <multiboot.h>
-#include <kernel.h>
 
 #define BOOT_KERNEL_STACK_SIZE  0x1000
 
@@ -129,10 +128,12 @@ code_64:
 
 /* Enable SSE (assuming the CPU supports it) */
 
+        push    %rbx
         mov     $0x1, %rax
         cpuid
         test    $(1<<25), %edx
         jz      halt
+        pop     %rbx
 
         mov     %cr0, %rax
         and     $0xFFFB, %ax       /* clear coprocessor emulation CR0.EM */
