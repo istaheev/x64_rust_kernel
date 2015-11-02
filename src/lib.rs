@@ -35,14 +35,17 @@ pub extern fn kernel_main(multiboot_info_ptr: *const multiboot::Info) -> ! {
     println!("");
     println!("Kernel placement: {:?} - {:?}", &__link_kernel_begin_vaddr as *const u8, &__link_kernel_end_vaddr as *const u8);
 
-    println!("Running tests..");
+    print!("Running tests..");
     bits::tests();
-    println!("Tests passed successfully.");
+    println!(" successfully.");
 
-    /*
-     * Displaying CPU information
-     */
+    display_cpu_info();
+    display_multiboot_info(multiboot_info_ptr);
 
+    halt();
+}
+
+fn display_cpu_info() {
     let vendor_id = cpuid::get_vendor_id();
     println!("CPU vendor: {}.", unsafe { ::core::str::from_utf8_unchecked(&vendor_id.vendor) });
     println!("CPUID: max basic function 0x{:x}, max extended function 0x{:x}.", vendor_id.max_basic_func, vendor_id.max_extended_func);
@@ -55,20 +58,9 @@ pub extern fn kernel_main(multiboot_info_ptr: *const multiboot::Info) -> ! {
         print!("CPU flags: ");
         cpuid::print_cpu_features(cpu_info.features2, cpuid::CPU_FEATURES2_MAP);
     }
-
-    /*
-     * Displaying information from multiboot
-     */
-    display_multiboot_info(multiboot_info_ptr);
-
-    halt();
 }
 
 fn display_multiboot_info(multiboot_info_ptr: *const multiboot::Info) {
-    println!("Multiboot info located at {:?}.", multiboot_info_ptr);
-
-    bochs::magic_break();
-
     let multiboot_info = unsafe { &*multiboot_info_ptr };
 
     if multiboot_info.is_memory_size_available() {
@@ -80,7 +72,7 @@ fn display_multiboot_info(multiboot_info_ptr: *const multiboot::Info) {
     if multiboot_info.is_memory_map_available() {
         println!("Memory map:");
         for region in multiboot_info.memory_regions_iter() {
-            println!("0x{:016x} - 0x{:016x} ({} bytes): {:?}", region.address, region.address + region.length - 1, region.length, region.region_type);
+            println!("  0x{:016x} - 0x{:016x} ({} bytes): {:?}", region.address, region.address + region.length - 1, region.length, region.region_type);
         }
     } else {
         println!("No memory map available from multiboot.");
