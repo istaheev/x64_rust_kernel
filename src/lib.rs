@@ -55,8 +55,8 @@ fn display_cpu_info() {
         println!("CPU: stepping {}, model {}, family {}, type {}.", cpu_info.stepping, cpu_info.model, cpu_info.family, cpu_info.cpu_type);
         print!("CPU flags: ");
         cpuid::print_cpu_features(cpu_info.features1, cpuid::CPU_FEATURES1_MAP);
-        print!("CPU flags: ");
         cpuid::print_cpu_features(cpu_info.features2, cpuid::CPU_FEATURES2_MAP);
+        println!("");
     }
 }
 

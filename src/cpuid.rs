@@ -220,5 +220,4 @@ pub fn print_cpu_features(features: u32, map: &[(u32, &str)]) {
             print!("{} ", desc);
         }
     }
-    println!("");
 }
