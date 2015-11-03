@@ -64,16 +64,17 @@ fn display_multiboot_info(multiboot_info_ptr: *const multiboot::Info) {
     let multiboot_info = unsafe { &*multiboot_info_ptr };
 
     if multiboot_info.is_memory_size_available() {
-        println!("Lower memory: {} bytes; Upper: {} bytes.", multiboot_info.get_lower_memory(), multiboot_info.get_upper_memory());
+        println!("Lower memory: {}; Upper: {}; Total: {}.", multiboot_info.get_lower_memory(), multiboot_info.get_upper_memory(), multiboot_info.get_lower_memory() + multiboot_info.get_upper_memory());
     } else {
         println!("No memory size available from multiboot.");
     }
 
     if multiboot_info.is_memory_map_available() {
         println!("Memory map:");
-        for region in multiboot_info.memory_regions_iter() {
+        for region in multiboot_info.memory_regions() {
             println!("  0x{:016x} - 0x{:016x} ({} bytes): {:?}", region.address, region.address + region.length - 1, region.length, region.region_type);
         }
+        println!("Memory available in total: {} bytes.", multiboot_info.total_memory_available());
     } else {
         println!("No memory map available from multiboot.");
     }

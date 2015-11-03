@@ -1,6 +1,38 @@
 use core::iter::Iterator;
 
 /*
+ * General memory information structures which (ideally) should be moved to a separate module.
+ */
+
+#[derive(Eq,PartialEq,Debug)]
+pub enum MemoryRegionType {
+    Available,
+    Reserved,
+    PartiallyAvailable
+}
+
+pub struct MemoryRegion {
+    pub address:     u64,
+    pub length:      u64,
+    pub region_type: MemoryRegionType
+}
+
+pub trait PhysicalMemoryMap {
+    fn memory_regions<'a>(&'a self) -> MemoryRegionIterator<'a>;
+
+    /* Total amount of memory available for kernel (in bytes) */
+    fn total_memory_available(&self) -> usize {
+        self.memory_regions()
+            .filter(|r| r.region_type == MemoryRegionType::Available)
+            .fold(0, |acc,r| acc + (r.length as usize))
+    }
+}
+
+/*
+ * And this is MultiBoot part.
+ */
+
+/*
  * Constants for Info::flags.
  */
 
@@ -127,26 +159,8 @@ impl Info {
 }
 
 
-#[derive(Debug)]
-pub enum MemoryRegionType {
-    Available,
-    Reserved,
-    PartiallyReserved
-}
-
-pub struct MemoryRegion {
-    pub address:     u64,
-    pub length:      u64,
-    pub region_type: MemoryRegionType
-}
-
-pub trait PhysicalMemoryMap {
-    fn memory_regions_iter(&self) -> MemoryRegionIterator;
-}
-
 impl PhysicalMemoryMap for Info {
-
-    fn memory_regions_iter<'a>(&'a self) -> MemoryRegionIterator<'a> {
+    fn memory_regions<'a>(&'a self) -> MemoryRegionIterator<'a> {
         if !self.is_memory_map_available() {
             panic!("No memory map available in multiboot info");
         }
@@ -179,3 +193,31 @@ impl<'a> Iterator for MemoryRegionIterator<'a> {
         }
     }
 }
+
+
+/*
+ * Iterator which enumerates all pages of size page_size in the specified region.
+ */
+/*
+struct MemoryPageIterator {
+    start_addr: usize,
+    length:   usize,
+    page_size:  usize
+}
+
+impl Iterator for MemoryPageIterator {
+    type Item = MemoryRegion;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.length == 0 {
+            // no more pages are in the region
+            None
+        } else {
+            let page_addr = self.start_addr;
+            if self.length < self.page_size {
+
+            }
+        }
+    }
+}
+*/
