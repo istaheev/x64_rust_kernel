@@ -12,9 +12,15 @@ pub enum MemoryRegionType {
 }
 
 pub struct MemoryRegion {
-    pub address:     u64,
-    pub length:      u64,
+    pub address:     usize,
+    pub length:      usize,
     pub region_type: MemoryRegionType
+}
+
+impl MemoryRegion {
+    pub fn end_address(&self) -> usize {
+        self.address + self.length - 1
+    }
 }
 
 pub trait PhysicalMemoryMap {
@@ -184,8 +190,8 @@ impl<'a> Iterator for MemoryRegionIterator<'a> {
             let mmap_entry = unsafe { &*(self.ptr as *const MemoryMapEntry) };
             self.ptr = self.ptr + mmap_entry.size + (::core::mem::size_of_val(&mmap_entry.size) as u32);
             Some(MemoryRegion {
-                address: mmap_entry.addr,
-                length: mmap_entry.len,
+                address: (mmap_entry.addr as usize),
+                length: (mmap_entry.len as usize),
                 region_type: if mmap_entry.mem_type == MEMORY_AVAILABLE { MemoryRegionType::Available } else { MemoryRegionType::Reserved }
             })
         } else {

@@ -2,6 +2,7 @@ OUTPUT_FORMAT("elf64-x86-64")
 ENTRY(entry)
 
 KERNEL_LMA = 0x100000;
+/* Should be synchronized with config.rs */
 KERNEL_VMA = 0xFFFFFFFF80000000;
 
 SECTIONS

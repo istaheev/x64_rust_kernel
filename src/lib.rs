@@ -12,28 +12,24 @@ extern crate spin;
 
 mod bits;
 mod bochs;
+mod config;
+mod memory;
 mod multiboot;
 #[macro_use]
 mod vga;
 mod cpuid;
 mod paging;
+mod phys_mem_allocator;
 
 use multiboot::PhysicalMemoryMap;
-
-// Symbols from linker
-extern {
-    static __link_kernel_begin_vaddr: u8;
-    static __link_kernel_end_vaddr: u8;
-    static __link_load_end: u8;
-    static __link_bss_end: u8;
-}
+use phys_mem_allocator::PhysMemAllocator;
 
 #[no_mangle]
 pub extern fn kernel_main(multiboot_info_ptr: *const multiboot::Info) -> ! {
     //bochs::magic_break();
 
     println!("");
-    println!("Kernel placement: {:?} - {:?}", &__link_kernel_begin_vaddr as *const u8, &__link_kernel_end_vaddr as *const u8);
+    println!("Kernel placement: 0x{:016x} - 0x{:016x} ({} bytes).", config::kernel_begin_vaddr(), config::kernel_end_vaddr(), config::kernel_end_vaddr() - config::kernel_begin_vaddr());
 
     print!("Running tests..");
     bits::tests();
@@ -42,7 +38,27 @@ pub extern fn kernel_main(multiboot_info_ptr: *const multiboot::Info) -> ! {
     display_cpu_info();
     display_multiboot_info(multiboot_info_ptr);
 
+    let multiboot_info = unsafe { &*multiboot_info_ptr };
+    let mut phys_mem_allocator = PhysMemAllocator::init(multiboot_info);
+
+    let multiboot_info = unsafe { &*multiboot_info_ptr };
+    let lower_mem_pages = multiboot_info.get_lower_memory() / 4096;
+    let p1 = alloc_pages(&mut phys_mem_allocator, lower_mem_pages as u32);
+    let p2 = phys_mem_allocator.alloc_page().unwrap();
+    let p3 = phys_mem_allocator.alloc_page().unwrap();
+    let p4 = phys_mem_allocator.alloc_page().unwrap();
+    let p5 = phys_mem_allocator.alloc_page().unwrap();
+    println!("pages: 0x{:x}, 0x{:x}, 0x{:x}, 0x{:x}, 0x{:x}.", p1, p2, p3, p4, p5);
+
     halt();
+}
+
+fn alloc_pages(allocator: &mut PhysMemAllocator, n: u32) -> usize {
+    let mut p = allocator.alloc_page().unwrap();
+    for i in 1..n {
+        p = allocator.alloc_page().unwrap();
+    }
+    p
 }
 
 fn display_cpu_info() {
