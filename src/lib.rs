@@ -22,7 +22,6 @@ mod paging;
 mod phys_mem_allocator;
 
 use multiboot::PhysicalMemoryMap;
-use phys_mem_allocator::PhysMemAllocator;
 
 #[no_mangle]
 pub extern fn kernel_main(multiboot_info_ptr: *const multiboot::Info) -> ! {
@@ -36,36 +35,47 @@ pub extern fn kernel_main(multiboot_info_ptr: *const multiboot::Info) -> ! {
     phys_mem_allocator::bitmap_test();
     println!(" successfully.");
 
-    display_cpu_info();
-    display_multiboot_info(multiboot_info_ptr);
-
     let multiboot_info = unsafe { &*multiboot_info_ptr };
+
+    display_cpu_info();
+    display_multiboot_info(multiboot_info);
+
+    /* Initialize physical memory manager.
+     * !All memory allocation can be done only after this step!
+     */
 
     /* Warning: kernel stack and page tables set by bootstrap marked as free
      * and might be allocated by the allocator.
      * They should be reinitialized by the kernel asap.
      */
-    let mut phys_mem_allocator = PhysMemAllocator::init(multiboot_info);
-    println!("Physical memory: {} total pages, {} free pages ({} pages occupied).",
-             phys_mem_allocator.total_pages_count(),
-             phys_mem_allocator.free_pages_count(),
-             phys_mem_allocator.total_pages_count() - phys_mem_allocator.free_pages_count());
+    phys_mem_allocator::PHYS_PAGE_MGR.lock().init(multiboot_info);
 
+    {
+        let mut mgr = phys_mem_allocator::PHYS_PAGE_MGR.lock();
+        println!("Physical memory: {} total pages, {} free pages ({} pages occupied).",
+                 mgr.total_pages_count(),
+                 mgr.free_pages_count(),
+                 mgr.total_pages_count() - mgr.free_pages_count());
+    }
+
+    /* Some tests */
     let lower_mem_pages = multiboot_info.get_lower_memory() / 4096;
-    let p1 = alloc_pages(&mut phys_mem_allocator, lower_mem_pages as u32);
-    let p2 = phys_mem_allocator.alloc_page().unwrap();
-    let p3 = phys_mem_allocator.alloc_page().unwrap();
-    let p4 = phys_mem_allocator.alloc_page().unwrap();
-    let p5 = phys_mem_allocator.alloc_page().unwrap();
+    let p1 = alloc_pages(lower_mem_pages as u32);
+    let mut mgr = phys_mem_allocator::PHYS_PAGE_MGR.lock();
+    let p2 = mgr.alloc_page().unwrap();
+    let p3 = mgr.alloc_page().unwrap();
+    let p4 = mgr.alloc_page().unwrap();
+    let p5 = mgr.alloc_page().unwrap();
     println!("pages: 0x{:x}, 0x{:x}, 0x{:x}, 0x{:x}, 0x{:x}.", p1, p2, p3, p4, p5);
 
     halt();
 }
 
-fn alloc_pages(allocator: &mut PhysMemAllocator, n: u32) -> usize {
-    let mut p = allocator.alloc_page().unwrap();
+fn alloc_pages(n: u32) -> usize {
+    let mut mgr = phys_mem_allocator::PHYS_PAGE_MGR.lock();
+    let mut p = mgr.alloc_page().unwrap();
     for i in 1..n {
-        p = allocator.alloc_page().unwrap();
+        p = mgr.alloc_page().unwrap();
     }
     p
 }
@@ -85,9 +95,7 @@ fn display_cpu_info() {
     }
 }
 
-fn display_multiboot_info(multiboot_info_ptr: *const multiboot::Info) {
-    let multiboot_info = unsafe { &*multiboot_info_ptr };
-
+fn display_multiboot_info(multiboot_info: &multiboot::Info) {
     if multiboot_info.is_memory_size_available() {
         println!("Lower memory: {}; Upper: {}; Total: {}.", multiboot_info.get_lower_memory(), multiboot_info.get_upper_memory(), multiboot_info.get_lower_memory() + multiboot_info.get_upper_memory());
     } else {

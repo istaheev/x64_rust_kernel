@@ -6,19 +6,31 @@
 use config;
 use memory;
 use multiboot::{PhysicalMemoryMap, MemoryRegionType};
+use spin::Mutex;
 
 const PAGE_SIZE: usize = 4096;
+
+pub static PHYS_PAGE_MGR: Mutex<PhysMemAllocator> = Mutex::new(PhysMemAllocator {
+            bitmap:            None,
+            total_pages_count: 0,
+            free_pages_count:  0
+        });
 
 // IDEA: keep separate allocators for every available memory region
 
 pub struct PhysMemAllocator {
-    bitmap: Bitmap<'static>,
+    /* None is kept here until the allocator is initialized.
+     * A try to use uninitialized allocator will cause panic.
+     */
+    bitmap: Option<Bitmap<'static>>,
     total_pages_count: u64,
     free_pages_count: u64,
 }
 
 impl PhysMemAllocator {
-    pub fn init(mem_map: &PhysicalMemoryMap) -> PhysMemAllocator {
+
+    // Warning: kernel stack and page tables set up by bootstrapper are not marked as occupied!
+    pub fn init(&mut self, mem_map: &PhysicalMemoryMap) {
         /* Find the end of the available physical memory (end address of the last available memory region).
          * The allocator will use a region of 0..<end_address> for allocations. The region can have reserved areas
          * in it, they will be marked as already allocated in the allocator.
@@ -44,29 +56,24 @@ impl PhysMemAllocator {
         let mut bitmap = Bitmap::from_raw_addr(bitmap_addr, total_phys_pages as usize);
         bitmap.clear();
 
-        let mut allocator = PhysMemAllocator {
-            bitmap: bitmap,
-            total_pages_count: total_phys_pages,
-            free_pages_count: total_phys_pages,
-        };
+        self.bitmap = Some(bitmap);
+        self.total_pages_count = total_phys_pages;
+        self.free_pages_count = total_phys_pages;
 
         /* Mark all memory as occupied */
-        allocator.mark_region(0, last_avail_region.end_address() + 1, true);
+        self.mark_region(0, last_avail_region.end_address() + 1, true);
 
         /* Mark all available regions from memory map as free */
         for region in mem_map.memory_regions().filter(|r| r.region_type == MemoryRegionType::Available) {
-            allocator.mark_region(region.address, region.length, false);
+            self.mark_region(region.address, region.length, false);
         }
 
         /* Mark kernel location as occupied */
-        allocator.mark_region(config::kernel_begin_phys_addr(), config::kernel_end_phys_addr() - config::kernel_begin_phys_addr(), true);
+        self.mark_region(config::kernel_begin_phys_addr(), config::kernel_end_phys_addr() - config::kernel_begin_phys_addr(), true);
 
         /* Mark bitmap location as occupied */
-        allocator.mark_region(bitmap_addr, bitmap_bytes as usize, true);
+        self.mark_region(bitmap_addr, bitmap_bytes as usize, true);
 
-        // TODO: kernel stack and page tables set up by bootstrapper are not marked as occupied!
-
-        allocator
     }
 
     pub fn total_pages_count(&self) -> u64 {
@@ -78,9 +85,10 @@ impl PhysMemAllocator {
     }
 
     pub fn alloc_page(&mut self) -> Option<usize> {
-        match self.bitmap.find_first_zero() {
+        let bitmap = self.bitmap.as_mut().unwrap();
+        match bitmap.find_first_zero() {
             Some(bit) => {
-                self.bitmap.set_bit(bit);
+                bitmap.set_bit(bit);
                 Some(bit * PAGE_SIZE)
             },
             None => None
@@ -103,14 +111,15 @@ impl PhysMemAllocator {
     fn mark_page(&mut self, addr: usize, occupied: bool) {
         debug_assert_eq!(0, addr % PAGE_SIZE);
 
+        let bitmap = self.bitmap.as_mut().unwrap();
         let bit = addr / PAGE_SIZE;
         if occupied {
-            debug_assert!(!self.bitmap.is_bit_set(bit), "Bit already set for new page");
-            self.bitmap.set_bit(bit);
+            debug_assert!(!bitmap.is_bit_set(bit), "Bit already set for new page");
+            bitmap.set_bit(bit);
             self.free_pages_count = self.free_pages_count - 1;
         } else {
-            debug_assert!(self.bitmap.is_bit_set(bit), "Bit already cleared for occupied page");
-            self.bitmap.clear_bit(bit);
+            debug_assert!(bitmap.is_bit_set(bit), "Bit already cleared for occupied page");
+            bitmap.clear_bit(bit);
             self.free_pages_count = self.free_pages_count + 1;
         }
     }
