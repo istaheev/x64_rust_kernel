@@ -33,15 +33,24 @@ pub extern fn kernel_main(multiboot_info_ptr: *const multiboot::Info) -> ! {
 
     print!("Running tests..");
     bits::tests();
+    phys_mem_allocator::bitmap_test();
     println!(" successfully.");
 
     display_cpu_info();
     display_multiboot_info(multiboot_info_ptr);
 
     let multiboot_info = unsafe { &*multiboot_info_ptr };
-    let mut phys_mem_allocator = PhysMemAllocator::init(multiboot_info);
 
-    let multiboot_info = unsafe { &*multiboot_info_ptr };
+    /* Warning: kernel stack and page tables set by bootstrap marked as free
+     * and might be allocated by the allocator.
+     * They should be reinitialized by the kernel asap.
+     */
+    let mut phys_mem_allocator = PhysMemAllocator::init(multiboot_info);
+    println!("Physical memory: {} total pages, {} free pages ({} pages occupied).",
+             phys_mem_allocator.total_pages_count(),
+             phys_mem_allocator.free_pages_count(),
+             phys_mem_allocator.total_pages_count() - phys_mem_allocator.free_pages_count());
+
     let lower_mem_pages = multiboot_info.get_lower_memory() / 4096;
     let p1 = alloc_pages(&mut phys_mem_allocator, lower_mem_pages as u32);
     let p2 = phys_mem_allocator.alloc_page().unwrap();
