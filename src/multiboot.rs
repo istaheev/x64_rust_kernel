@@ -45,30 +45,40 @@ pub trait PhysicalMemoryMap {
 /* is there basic lower/upper memory information? */
 const INFO_MEMORY: u32 =           0x00000001;
 /* is there a boot device set? */
+#[allow(dead_code)]
 const INFO_BOOTDEV: u32 =          0x00000002;
 /* is the command-line defined? */
+#[allow(dead_code)]
 const INFO_CMDLINE: u32 =          0x00000004;
 /* are there modules to do something with? */
+#[allow(dead_code)]
 const INFO_MODS: u32 =             0x00000008;
 
 /* These next two are mutually exclusive */
 
 /* is there a symbol table loaded? */
+#[allow(dead_code)]
 const INFO_AOUT_SYMS: u32 =        0x00000010;
 /* is there an ELF section header table? */
+#[allow(dead_code)]
 const INFO_ELF_SHDR: u32 =         0x00000020;
 
 /* is there a full memory map? */
 const INFO_MEM_MAP: u32 =          0x00000040;
 /* Is there drive info? */
+#[allow(dead_code)]
 const INFO_DRIVE_INFO: u32 =       0x00000080;
 /* Is there a config table? */
+#[allow(dead_code)]
 const INFO_CONFIG_TABLE: u32 =     0x00000100;
 /* Is there a boot loader name? */
+#[allow(dead_code)]
 const INFO_BOOT_LOADER_NAME: u32 = 0x00000200;
 /* Is there a APM table? */
+#[allow(dead_code)]
 const INFO_APM_TABLE: u32 =        0x00000400;
 /* Is there video information? */
+#[allow(dead_code)]
 const INFO_VIDEO_INFO: u32 =       0x00000800;
 
 /*
@@ -76,6 +86,7 @@ const INFO_VIDEO_INFO: u32 =       0x00000800;
  */
 
 const MEMORY_AVAILABLE: u32 =      1;
+#[allow(dead_code)]
 const MEMORY_RESERVED: u32 =       2;
 
 

@@ -51,7 +51,7 @@ pub extern fn kernel_main(multiboot_info_ptr: *const multiboot::Info) -> ! {
     phys_mem_allocator::PHYS_PAGE_MGR.lock().init(multiboot_info);
 
     {
-        let mut mgr = phys_mem_allocator::PHYS_PAGE_MGR.lock();
+        let mgr = phys_mem_allocator::PHYS_PAGE_MGR.lock();
         println!("Physical memory: {} total pages, {} free pages ({} pages occupied).",
                  mgr.total_pages_count(),
                  mgr.free_pages_count(),
@@ -74,7 +74,7 @@ pub extern fn kernel_main(multiboot_info_ptr: *const multiboot::Info) -> ! {
 fn alloc_pages(n: u32) -> usize {
     let mut mgr = phys_mem_allocator::PHYS_PAGE_MGR.lock();
     let mut p = mgr.alloc_page().unwrap();
-    for i in 1..n {
+    for _ in 1..n {
         p = mgr.alloc_page().unwrap();
     }
     p
