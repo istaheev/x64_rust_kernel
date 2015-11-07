@@ -29,9 +29,12 @@ pub extern fn kernel_main(multiboot_info_ptr: *const multiboot::Info) -> ! {
     //bochs::magic_break();
 
     println!("");
-    println!("Kernel placement: 0x{:016x} - 0x{:016x} ({} bytes).", config::kernel_begin_vaddr(), config::kernel_end_vaddr(), config::kernel_end_vaddr() - config::kernel_begin_vaddr());
+    println!("Kernel placement: 0x{:016x} - 0x{:016x} ({} bytes).",
+        config::kernel_begin_vaddr(),
+        config::kernel_end_vaddr(),
+        config::kernel_end_vaddr() - config::kernel_begin_vaddr());
 
-    print!("Running tests..");
+    print!("Running tests.. ");
     bits::tests();
     bitmap::bitmap_test();
     println!(" successfully.");
@@ -42,7 +45,7 @@ pub extern fn kernel_main(multiboot_info_ptr: *const multiboot::Info) -> ! {
     display_multiboot_info(multiboot_info);
 
     /* Initialize physical memory manager.
-     * !All memory allocation can be done only after this step!
+     * All memory allocations can be done only after this step!
      */
 
     /* Warning: kernel stack and page tables set by bootstrap marked as free
@@ -50,35 +53,12 @@ pub extern fn kernel_main(multiboot_info_ptr: *const multiboot::Info) -> ! {
      * They should be reinitialized by the kernel asap.
      */
     physical_memory_manager::INSTANCE.lock().init(multiboot_info);
-
-    {
-        let mgr = physical_memory_manager::INSTANCE.lock();
-        println!("Physical memory: {} total pages, {} free pages ({} pages occupied).",
-                 mgr.total_pages_count(),
-                 mgr.free_pages_count(),
-                 mgr.total_pages_count() - mgr.free_pages_count());
-    }
+    display_physical_memory_info();
 
     /* Some tests */
-    let lower_mem_pages = multiboot_info.get_lower_memory() / 4096;
-    let p1 = alloc_pages(lower_mem_pages as u32);
-    let mut mgr = physical_memory_manager::INSTANCE.lock();
-    let p2 = mgr.alloc_page().unwrap();
-    let p3 = mgr.alloc_page().unwrap();
-    let p4 = mgr.alloc_page().unwrap();
-    let p5 = mgr.alloc_page().unwrap();
-    println!("pages: 0x{:x}, 0x{:x}, 0x{:x}, 0x{:x}, 0x{:x}.", p1, p2, p3, p4, p5);
+    physical_memory_manager_test(multiboot_info);
 
     halt();
-}
-
-fn alloc_pages(n: u32) -> usize {
-    let mut mgr = physical_memory_manager::INSTANCE.lock();
-    let mut p = mgr.alloc_page().unwrap();
-    for _ in 1..n {
-        p = mgr.alloc_page().unwrap();
-    }
-    p
 }
 
 fn display_cpu_info() {
@@ -112,6 +92,28 @@ fn display_multiboot_info(multiboot_info: &multiboot::Info) {
     } else {
         println!("No memory map available from multiboot.");
     }
+}
+
+fn display_physical_memory_info() {
+    let mgr = physical_memory_manager::INSTANCE.lock();
+    println!("Physical memory: {} total pages, {} free pages ({} pages occupied).",
+             mgr.total_pages_count(),
+             mgr.free_pages_count(),
+             mgr.total_pages_count() - mgr.free_pages_count());
+}
+
+fn physical_memory_manager_test(multiboot_info: &multiboot::Info) {
+    let lower_mem_pages = multiboot_info.get_lower_memory() / 4096;
+    let mut mgr = physical_memory_manager::INSTANCE.lock();
+    for _ in 0..lower_mem_pages-1 {
+        let p = mgr.alloc_page().unwrap();
+    }
+    let p1 = mgr.alloc_page().unwrap();
+    let p2 = mgr.alloc_page().unwrap();
+    let p3 = mgr.alloc_page().unwrap();
+    let p4 = mgr.alloc_page().unwrap();
+    let p5 = mgr.alloc_page().unwrap();
+    println!("pages: 0x{:x}, 0x{:x}, 0x{:x}, 0x{:x}, 0x{:x}.", p1, p2, p3, p4, p5);
 }
 
 fn halt() -> ! {
