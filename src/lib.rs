@@ -13,13 +13,14 @@ extern crate spin;
 mod bits;
 mod bochs;
 mod config;
+mod bitmap;
 mod memory;
 mod multiboot;
 #[macro_use]
 mod vga;
 mod cpuid;
 mod paging;
-mod phys_mem_allocator;
+mod physical_memory_manager;
 
 use multiboot::PhysicalMemoryMap;
 
@@ -32,7 +33,7 @@ pub extern fn kernel_main(multiboot_info_ptr: *const multiboot::Info) -> ! {
 
     print!("Running tests..");
     bits::tests();
-    phys_mem_allocator::bitmap_test();
+    bitmap::bitmap_test();
     println!(" successfully.");
 
     let multiboot_info = unsafe { &*multiboot_info_ptr };
@@ -48,10 +49,10 @@ pub extern fn kernel_main(multiboot_info_ptr: *const multiboot::Info) -> ! {
      * and might be allocated by the allocator.
      * They should be reinitialized by the kernel asap.
      */
-    phys_mem_allocator::PHYS_PAGE_MGR.lock().init(multiboot_info);
+    physical_memory_manager::INSTANCE.lock().init(multiboot_info);
 
     {
-        let mgr = phys_mem_allocator::PHYS_PAGE_MGR.lock();
+        let mgr = physical_memory_manager::INSTANCE.lock();
         println!("Physical memory: {} total pages, {} free pages ({} pages occupied).",
                  mgr.total_pages_count(),
                  mgr.free_pages_count(),
@@ -61,7 +62,7 @@ pub extern fn kernel_main(multiboot_info_ptr: *const multiboot::Info) -> ! {
     /* Some tests */
     let lower_mem_pages = multiboot_info.get_lower_memory() / 4096;
     let p1 = alloc_pages(lower_mem_pages as u32);
-    let mut mgr = phys_mem_allocator::PHYS_PAGE_MGR.lock();
+    let mut mgr = physical_memory_manager::INSTANCE.lock();
     let p2 = mgr.alloc_page().unwrap();
     let p3 = mgr.alloc_page().unwrap();
     let p4 = mgr.alloc_page().unwrap();
@@ -72,7 +73,7 @@ pub extern fn kernel_main(multiboot_info_ptr: *const multiboot::Info) -> ! {
 }
 
 fn alloc_pages(n: u32) -> usize {
-    let mut mgr = phys_mem_allocator::PHYS_PAGE_MGR.lock();
+    let mut mgr = physical_memory_manager::INSTANCE.lock();
     let mut p = mgr.alloc_page().unwrap();
     for _ in 1..n {
         p = mgr.alloc_page().unwrap();
