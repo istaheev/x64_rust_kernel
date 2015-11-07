@@ -15,6 +15,9 @@ RUST_KERNEL = target/$(RUST_TARGET)/$(CONFIG)/libx64_rust_kernel.a
 
 LINKER_LD = src/arch/$(ARCH)/linker.ld
 
+# grub2-mkrescue for centos
+GRUBMKRESCUE = grub-mkrescue
+
 # Compilation flags
 
 CC = gcc
@@ -37,7 +40,7 @@ image: build/kernel image/boot/grub/grub.cfg
 	rm -rf build/image
 	cp -R image build/image
 	cp build/kernel build/image/kernel
-	grub2-mkrescue -o build/image.iso build/image
+	$(GRUBMKRESCUE) -o build/image.iso build/image
 
 # Link the kernel
 build/kernel: prepare rust Makefile $(LINKER_LD) $(ASM_OBJS)
