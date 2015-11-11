@@ -1,5 +1,5 @@
 /* Virtual memory where the kernel is loaded. Should be synchronized with linker.ld */
-pub const KERNEL_VMA: usize = 0xFFFFFFFF80000000;
+pub const KERNEL_VIRTUAL_BASE: usize = 0xFFFFFFFF80000000;
 
 // Symbols from linker
 extern {
@@ -18,10 +18,10 @@ pub fn kernel_end_vaddr() -> usize {
 }
 
 pub fn kernel_begin_phys_addr() -> usize {
-    kernel_begin_vaddr() - KERNEL_VMA
+    kernel_begin_vaddr() - KERNEL_VIRTUAL_BASE
 }
 
 pub fn kernel_end_phys_addr() -> usize {
-    kernel_end_vaddr() - KERNEL_VMA
+    kernel_end_vaddr() - KERNEL_VIRTUAL_BASE
 }
 

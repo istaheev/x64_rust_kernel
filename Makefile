@@ -16,7 +16,7 @@ RUST_KERNEL = target/$(RUST_TARGET)/$(CONFIG)/libx64_rust_kernel.a
 LINKER_LD = src/arch/$(ARCH)/linker.ld
 
 # grub2-mkrescue for centos
-GRUBMKRESCUE = grub-mkrescue
+GRUBMKRESCUE = grub2-mkrescue
 
 # Compilation flags
 

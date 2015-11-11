@@ -3,7 +3,7 @@
 
 // The kernel is linked to this virtual address.
 // linker.ld should be updated accordingly if changed.
-#define KERNEL_VMA 0xFFFFFFFF80000000
+#define KERNEL_VIRTUAL_BASE 0xFFFFFFFF80000000
 
 // Size of the kernel stack
 #define KERNEL_STACK_SIZE 0x2000
@@ -13,7 +13,7 @@
 #define IDT_ENTRIES_COUNT 0x30
 
 // Returns physical address of a pointer located in the higher half
-#define PHYS_ADDR(x) (x - KERNEL_VMA)
+#define PHYS_ADDR(x) (x - KERNEL_VIRTUAL_BASE)
 
 #ifndef ASM_FILE
 
@@ -55,7 +55,7 @@ extern char __link_kernel_end_vaddr[];
 #define SEG_CODE_64         0x01
 
 // segment_descriptor.granularity
-#define SEG_GRAN_1B         0x00 
+#define SEG_GRAN_1B         0x00
 #define SEG_GRAN_4KB        0x01
 
 struct segment_descriptor
