@@ -1,36 +1,18 @@
 use core::iter::Iterator;
 
+use memory::MemoryRegion;
+
 /*
  * General memory information structures which (ideally) should be moved to a separate module.
  */
 
-#[derive(Eq,PartialEq,Debug)]
-pub enum MemoryRegionType {
-    Available,
-    Reserved,
-    PartiallyAvailable
-}
-
-pub struct MemoryRegion {
-    pub address:     usize,
-    pub length:      usize,
-    pub region_type: MemoryRegionType
-}
-
-impl MemoryRegion {
-    pub fn end_address(&self) -> usize {
-        self.address + self.length - 1
-    }
-}
-
 pub trait PhysicalMemoryMap {
-    fn memory_regions<'a>(&'a self) -> MemoryRegionIterator<'a>;
+    fn available_memory_regions<'a>(&'a self) -> MemoryRegionIterator<'a>;
 
     /* Total amount of memory available for kernel (in bytes) */
     fn total_memory_available(&self) -> usize {
-        self.memory_regions()
-            .filter(|r| r.region_type == MemoryRegionType::Available)
-            .fold(0, |acc,r| acc + (r.length as usize))
+        self.available_memory_regions()
+            .fold(0, |acc,r| acc + r.size)
     }
 }
 
@@ -177,64 +159,40 @@ impl Info {
 
 
 impl PhysicalMemoryMap for Info {
-    fn memory_regions<'a>(&'a self) -> MemoryRegionIterator<'a> {
+    fn available_memory_regions<'a>(&'a self) -> MemoryRegionIterator<'a> {
         if !self.is_memory_map_available() {
             panic!("No memory map available in multiboot info");
         }
         MemoryRegionIterator {
-            info: self,
-            ptr:  self.mmap_addr
+            info:        self,
+            ptr:         self.mmap_addr,
+            memory_type: MEMORY_AVAILABLE
         }
     }
 }
 
 pub struct MemoryRegionIterator<'a> {
     info: &'a Info,
-    ptr: u32
+    ptr: u32,
+    memory_type: u32
 }
 
 impl<'a> Iterator for MemoryRegionIterator<'a> {
     type Item = MemoryRegion;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.ptr < self.info.mmap_addr + self.info.mmap_length {
+        while self.ptr < self.info.mmap_addr + self.info.mmap_length {
             let mmap_entry = unsafe { &*(self.ptr as *const MemoryMapEntry) };
             self.ptr = self.ptr + mmap_entry.size + (::core::mem::size_of_val(&mmap_entry.size) as u32);
-            Some(MemoryRegion {
-                address: (mmap_entry.addr as usize),
-                length: (mmap_entry.len as usize),
-                region_type: if mmap_entry.mem_type == MEMORY_AVAILABLE { MemoryRegionType::Available } else { MemoryRegionType::Reserved }
-            })
-        } else {
-            None
-        }
-    }
-}
-
-
-/*
- * Iterator which enumerates all pages of size page_size in the specified region.
- */
-/*
-struct MemoryPageIterator {
-    start_addr: usize,
-    length:   usize,
-    page_size:  usize
-}
-
-impl Iterator for MemoryPageIterator {
-    type Item = MemoryRegion;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        if self.length == 0 {
-            // no more pages are in the region
-            None
-        } else {
-            let page_addr = self.start_addr;
-            if self.length < self.page_size {
-
+            if mmap_entry.mem_type == self.memory_type {
+                return Some(MemoryRegion {
+                    addr: (mmap_entry.addr as usize),
+                    size: (mmap_entry.len as usize)
+                })
             }
         }
+
+        /* No suitable regions found */
+        None
     }
 }
-*/

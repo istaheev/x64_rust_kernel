@@ -1,5 +1,5 @@
 /*
- * The module manages pages of physical memory.
+ * Managing pages of physical memory.
  *
  */
 
@@ -7,10 +7,8 @@ use spin::Mutex;
 
 use config;
 use memory;
-use multiboot::{PhysicalMemoryMap, MemoryRegionType};
+use multiboot::PhysicalMemoryMap;
 use bitmap::Bitmap;
-
-const PAGE_SIZE: usize = 4096;
 
 pub static INSTANCE: Mutex<PhysicalMemoryManager> = Mutex::new(PhysicalMemoryManager {
     bitmap:            None,
@@ -37,13 +35,12 @@ impl PhysicalMemoryManager {
          * The allocator will use a region of 0..<end_address> for allocations. The region can have reserved areas
          * in it, they will be marked as already allocated in the allocator.
          */
-        let last_avail_region = mem_map.memory_regions()
-                                       .filter(|r| r.region_type == MemoryRegionType::Available)
+        let last_avail_region = mem_map.available_memory_regions()
                                        .last()
                                        .unwrap();
 
         /* Total amount of physical pages we have to control */
-        let total_phys_pages = ((last_avail_region.end_address() + 1) / PAGE_SIZE) as u64;
+        let total_phys_pages = ((last_avail_region.end_addr() + 1) / memory::PAGE_SIZE) as u64;
 
         /* Amount of bytes required to store the memory bitmap */
         let mut bitmap_bytes = total_phys_pages / 8;
@@ -54,7 +51,7 @@ impl PhysicalMemoryManager {
         /* The bitmap is placed immediately after the kernel aligned on a page boundary.
            XXX: It is assumed that there is enough available memory after the kernel. */
         // TODO: is alignment really required?
-        let bitmap_addr = memory::next_page_addr(config::kernel_end_phys_addr(), PAGE_SIZE);
+        let bitmap_addr = memory::next_page_addr(config::kernel_end_phys_addr(), memory::PAGE_SIZE);
         let mut bitmap = Bitmap::from_raw_addr(bitmap_addr, total_phys_pages as usize);
         bitmap.clear();
 
@@ -63,11 +60,11 @@ impl PhysicalMemoryManager {
         self.free_pages_count = total_phys_pages;
 
         /* Mark all memory as occupied */
-        self.mark_region(0, last_avail_region.end_address() + 1, true);
+        self.mark_region(0, last_avail_region.end_addr() + 1, true);
 
         /* Mark all available regions from memory map as free */
-        for region in mem_map.memory_regions().filter(|r| r.region_type == MemoryRegionType::Available) {
-            self.mark_region(region.address, region.length, false);
+        for region in mem_map.available_memory_regions() {
+            self.mark_region(region.addr, region.size, false);
         }
 
         /* Mark kernel location as occupied */
@@ -90,30 +87,30 @@ impl PhysicalMemoryManager {
         match bitmap.find_first_zero() {
             Some(bit) => {
                 bitmap.set_bit(bit);
-                Some(bit * PAGE_SIZE)
+                Some(bit * memory::PAGE_SIZE)
             },
             None => None
         }
     }
 
     pub fn free_page(&mut self, addr: usize) {
-        let bit = addr / PAGE_SIZE;
+        let bit = addr / memory::PAGE_SIZE;
         self.mark_page(bit, false);
     }
 
     fn mark_region(&mut self, addr: usize, length: usize, occupied: bool) {
-        let mut page = memory::page_addr(addr, PAGE_SIZE);
+        let mut page = memory::page_addr(addr, memory::PAGE_SIZE);
         while page < addr + length {
             self.mark_page(page, occupied);
-            page = page + PAGE_SIZE;
+            page = page + memory::PAGE_SIZE;
         }
     }
 
     fn mark_page(&mut self, addr: usize, occupied: bool) {
-        debug_assert_eq!(0, addr % PAGE_SIZE);
+        debug_assert_eq!(0, addr % memory::PAGE_SIZE);
 
         let bitmap = self.bitmap.as_mut().unwrap();
-        let bit = addr / PAGE_SIZE;
+        let bit = addr / memory::PAGE_SIZE;
         if occupied {
             debug_assert!(!bitmap.is_bit_set(bit), "Bit already set for new page");
             bitmap.set_bit(bit);

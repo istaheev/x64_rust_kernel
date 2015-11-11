@@ -85,8 +85,8 @@ fn display_multiboot_info(multiboot_info: &multiboot::Info) {
 
     if multiboot_info.is_memory_map_available() {
         println!("Memory map:");
-        for region in multiboot_info.memory_regions() {
-            println!("  0x{:016x} - 0x{:016x} ({} bytes): {:?}", region.address, region.address + region.length - 1, region.length, region.region_type);
+        for region in multiboot_info.available_memory_regions() {
+            println!("  0x{:016x} - 0x{:016x} ({} bytes): AVAILABLE", region.addr, region.end_addr(), region.size);
         }
         println!("Memory available in total: {} bytes.", multiboot_info.total_memory_available());
     } else {
@@ -103,7 +103,7 @@ fn display_physical_memory_info() {
 }
 
 fn physical_memory_manager_test(multiboot_info: &multiboot::Info) {
-    let lower_mem_pages = multiboot_info.get_lower_memory() / 4096;
+    let lower_mem_pages = multiboot_info.get_lower_memory() / (memory::PAGE_SIZE as u64);
     let mut mgr = physical_memory_manager::INSTANCE.lock();
     for _ in 0..lower_mem_pages-1 {
         let p = mgr.alloc_page().unwrap();
