@@ -1,17 +1,25 @@
 OUTPUT_FORMAT("elf64-x86-64")
 ENTRY(entry)
 
+/* Starting position of kernel placement in the physical memory */
 KERNEL_PHYSICAL_BASE = 0x100000;
-/* Should be synchronized with config.rs */
+
+/* Starting position of kernel in the virtual memory.
+ * Should be synchronized with config.rs */
 KERNEL_VIRTUAL_BASE = 0xFFFFFFFF80000000;
 
 SECTIONS
 {
     . = KERNEL_PHYSICAL_BASE;
 
-    .bootstrap :
+    .multiboot : AT(ADDR(.multiboot))
     {
-        */bootstrap.o(.text)
+        KEEP( *(.multiboot) )
+    }
+
+    .bootstrap : AT(ADDR(.bootstrap))
+    {
+        *(.bootstrap)
     }
 
     . += KERNEL_VIRTUAL_BASE;
@@ -20,14 +28,13 @@ SECTIONS
 
     .text ALIGN(0x1000) : AT(ADDR(.text) - KERNEL_VIRTUAL_BASE)
     {
-        *(.text.*)
-        *(EXCLUDE_FILE(*/bootstrap.o) .text)
-        *(.rodata.*)
+        *(.text .text.*)
+        *(.rodata .rodata.*)
     }
 
     .data ALIGN(0x1000) : AT(ADDR(.data) - KERNEL_VIRTUAL_BASE)
     {
-        *(.data.*)
+        *(.data .data.*)
     }
 
     __link_load_end = . - KERNEL_VIRTUAL_BASE;
@@ -43,6 +50,7 @@ SECTIONS
 
     /DISCARD/ :
     {
+        *(.gcc_except_table)
         *(.comment)
         *(.eh_frame)
     }

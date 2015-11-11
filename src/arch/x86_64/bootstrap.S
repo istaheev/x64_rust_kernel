@@ -8,19 +8,12 @@
                                 MULTIBOOT_PAGE_ALIGN  | \
                                 MULTIBOOT_MEMORY_INFO
 
-        .text
+/* =============================
+ * Multiboot header
+ * ============================= */
 
-        .globl entry, multiboot_entry
+.section .multiboot, "a"
 
-        .code32
-
-entry:
-        jmp multiboot_entry
-
-        /* Align 32 bits boundary. */
-        .align  4
-
-        /* Multiboot header. */
 multiboot_header:
         /* magic */
         .long   MULTIBOOT_HEADER_MAGIC
@@ -39,7 +32,15 @@ multiboot_header:
         /* entry_addr */
         .long   multiboot_entry
 
+/* =============================
+ * The bootstrap code section
+ * ============================= */
+
+.section .bootstrap, "ax"
+.code32
+
 multiboot_entry:
+        .globl multiboot_entry
 
 /* We dont trust segment descriptors from GRUB and set our ones */
 
