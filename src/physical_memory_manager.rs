@@ -62,7 +62,8 @@ impl PhysicalMemoryManager {
         self.free_pages_count = total_phys_pages;
 
         /* Mark all memory as occupied */
-        self.mark_region(MemoryRegion { addr: 0, size: last_avail_region.end_addr() + 1 }, true);
+        let available_memory = MemoryRegion { addr: 0, size: last_avail_region.end_addr() + 1 };
+        self.mark_region(available_memory.page_align(PAGE_SIZE), true);
 
         /* Mark all available regions from memory map as free */
         for region in mem_map.available_memory_regions() {
@@ -70,10 +71,10 @@ impl PhysicalMemoryManager {
         }
 
         /* Mark kernel location as occupied */
-        self.mark_region(layout::physical_kernel_placement(), true);
+        self.mark_region(layout::physical_kernel_placement().page_align(PAGE_SIZE), true);
 
         /* Mark bitmap location as occupied */
-        self.mark_region(layout::physical_region(bitmap_region), true);
+        self.mark_region(layout::physical_region(bitmap_region).page_align(PAGE_SIZE), true);
     }
 
     pub fn total_pages_count(&self) -> u64 {
@@ -101,10 +102,8 @@ impl PhysicalMemoryManager {
     }
 
     fn mark_region(&mut self, region: MemoryRegion, occupied: bool) {
-        let mut page = memory::page_addr(region.addr, PAGE_SIZE);
-        while page <= region.end_addr() {
-            self.mark_page(page, occupied);
-            page = page + PAGE_SIZE;
+        for page in region.pages_iter(PAGE_SIZE) {
+            self.mark_page(page.addr, occupied);
         }
     }
 

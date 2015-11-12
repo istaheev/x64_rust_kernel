@@ -4,7 +4,7 @@
 pub const PAGE_SIZE: usize = 4096;
 
 /* Defines arbitrary memory region */
-#[derive(Debug)]
+#[derive(Clone, Copy, Debug)]
 pub struct MemoryRegion {
     pub addr: usize,
     pub size: usize
@@ -42,6 +42,10 @@ impl MemoryRegion {
             size: next_page_addr(self.end_addr(), page_size) - start_addr
         }
     }
+
+    pub fn pages_iter(&self, page_size: usize) -> MemoryPageIterator {
+        MemoryPageIterator::new(*self, page_size)
+    }
 }
 
 /* Returns address of a page which the specified address belongs to */
@@ -52,4 +56,45 @@ pub fn page_addr(addr: usize, page_size: usize) -> usize {
 /* Returns address of the next page after a page the specified address belongs to */
 pub fn next_page_addr(addr: usize, page_size: usize) -> usize {
     page_addr(addr, page_size) + page_size
+}
+
+
+/* Iterates through all the pages lying in the specified region. */
+struct MemoryPageIterator {
+    region:       MemoryRegion,
+    page_size:    usize,
+    current_page: usize
+}
+
+impl MemoryPageIterator {
+    pub fn new(region: MemoryRegion, page_size: usize) -> MemoryPageIterator {
+        /* Address of the first page lying in the region */
+        let mut current_page = page_addr(region.addr, page_size);
+        if current_page < region.addr {
+            current_page += page_size;
+        }
+
+        MemoryPageIterator {
+            region: region,
+            page_size: page_size,
+            current_page: current_page
+        }
+    }
+}
+
+impl Iterator for MemoryPageIterator {
+    type Item = MemoryRegion;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let current_page = self.current_page;
+        if current_page + self.page_size <= self.region.addr + self.region.size {
+            self.current_page += self.page_size;
+            Some(MemoryRegion {
+                addr: current_page,
+                size: self.page_size
+            })
+        } else {
+            None
+        }
+    }
 }

@@ -37,3 +37,9 @@ pub fn paging_tests() {
         pte.present();
     }
 }
+
+
+/* */
+pub fn build_initial_memory_mapping() {
+
+}
