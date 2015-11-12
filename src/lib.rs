@@ -12,7 +12,7 @@ extern crate spin;
 
 mod bits;
 mod bochs;
-mod config;
+mod layout;
 mod bitmap;
 mod memory;
 mod multiboot;
@@ -30,9 +30,9 @@ pub extern fn kernel_main(multiboot_info_ptr: *const multiboot::Info) -> ! {
 
     println!("");
     println!("Kernel placement: 0x{:016x} - 0x{:016x} ({} bytes).",
-        config::kernel_begin_vaddr(),
-        config::kernel_end_vaddr(),
-        config::kernel_end_vaddr() - config::kernel_begin_vaddr());
+        layout::virtual_kernel_placement().addr,
+        layout::virtual_kernel_placement().end_addr(),
+        layout::virtual_kernel_placement().size);
 
     print!("Running tests.. ");
     bits::tests();
