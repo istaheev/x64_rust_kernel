@@ -1,0 +1,20 @@
+Different page tables entries:
+
+   | PML4   | PDP 1G | PDP PD | PD 2MB | PD PT  | PT     |
+---+--------+--------+--------+--------+--------+--------+
+00 | P      | P      | P      | P      | P      | P      |
+01 | R/W    | R/W    | R/W    | R/W    | R/W    | R/W    |
+02 | U/S    | U/S    | U/S    | U/S    | U/S    | U/S    |
+03 | PWT    | PWT    | PWT    | PWT    | PWT    | PWT    |
+04 | PCD    | PCD    | PCD    | PCD    | PCD    | PCD    |
+05 | A      | A      | A      | A      | A      | A      |
+06 | (Ign)  | D      | (Ign)  | D      | (Ign)  | D      |
+07 | (Rsrv) | PS=1   | PS=0   | PS=1   | PS=0   | PAT    |
+08 | (Ign)  | G      | (Ign)  | G      | (Ign)  | G      |
+09 | (Ign)  | (Ign)  | (Ign)  | (Ign)  | (Ign)  | (Ign)  |
+10 | (Ign)  | (Ign)  | (Ign)  | (Ign)  | (Ign)  | (Ign)  |
+11 | (Ign)  | (Ign)  | (Ign)  | (Ign)  | (Ign)  | (Ign)  |
+12 |  ----  | PAT    |  ----  | PAT    |  ----  |  ----  |
+---+--------+--------+--------+--------+--------+--------+
+
+P:  Present (must be 1 to map a page or a table);
