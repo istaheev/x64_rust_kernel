@@ -52,15 +52,15 @@ pub fn virtual_kernel_placement() -> MemoryRegion {
 /* Returns physical address for the corresponding virtual one.
  * Should only be applied for kernel addresses, might be invalid
  * after remapping */
-pub fn physical_addr(virtual_addr: usize) -> usize {
+pub fn to_physical_addr(virtual_addr: usize) -> usize {
     virtual_addr - KERNEL_VIRTUAL_BASE
 }
 
 /* Returns region in physical memory corresponding to the specified virtual one.
  * Should only be applied to kernel-related memory which placement is known */
-pub fn physical_region(virtual_region: MemoryRegion) -> MemoryRegion {
+pub fn to_physical_region(virtual_region: MemoryRegion) -> MemoryRegion {
     MemoryRegion {
-        addr: physical_addr(virtual_region.addr),
+        addr: to_physical_addr(virtual_region.addr),
         size: virtual_region.size
     }
 }

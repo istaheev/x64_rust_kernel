@@ -74,7 +74,7 @@ impl PhysicalMemoryManager {
         self.mark_region(layout::physical_kernel_placement().page_align(PAGE_SIZE), true);
 
         /* Mark bitmap location as occupied */
-        self.mark_region(layout::physical_region(bitmap_region).page_align(PAGE_SIZE), true);
+        self.mark_region(layout::to_physical_region(bitmap_region).page_align(PAGE_SIZE), true);
     }
 
     pub fn total_pages_count(&self) -> u64 {
