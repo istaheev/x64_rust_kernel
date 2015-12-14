@@ -58,6 +58,10 @@ pub extern fn kernel_main(multiboot_info_ptr: *const multiboot::Info) -> ! {
     /* Some tests */
     physical_memory_manager_test(multiboot_info);
 
+    unsafe {
+        paging::reset_bootstrap_paging();
+    }
+
     halt();
 }
 
