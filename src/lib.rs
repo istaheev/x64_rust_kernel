@@ -1,8 +1,5 @@
-#![feature(no_std)]
 #![feature(lang_items)]
 #![feature(const_fn)]
-#![feature(core_str_ext)]
-#![feature(core_slice_ext)]
 #![feature(asm)]
 #![feature(zero_one)]
 #![no_std]
@@ -68,11 +65,17 @@ pub extern fn kernel_main(multiboot_info_ptr: *const multiboot::Info) -> ! {
 fn display_cpu_info() {
     let vendor_id = cpuid::get_vendor_id();
     println!("CPU vendor: {}.", unsafe { ::core::str::from_utf8_unchecked(&vendor_id.vendor) });
-    println!("CPUID: max basic function 0x{:x}, max extended function 0x{:x}.", vendor_id.max_basic_func, vendor_id.max_extended_func);
+    println!("CPUID: max basic function 0x{:x}, max extended function 0x{:x}.",
+        vendor_id.max_basic_func,
+        vendor_id.max_extended_func);
 
     if vendor_id.is_cpu_info_available() {
         let cpu_info = cpuid::get_cpu_info();
-        println!("CPU: stepping {}, model {}, family {}, type {}.", cpu_info.stepping, cpu_info.model, cpu_info.family, cpu_info.cpu_type);
+        println!("CPU: stepping {}, model {}, family {}, type {}.",
+            cpu_info.stepping,
+            cpu_info.model,
+            cpu_info.family,
+            cpu_info.cpu_type);
         print!("CPU flags: ");
         cpuid::print_cpu_features(cpu_info.features1, cpuid::CPU_FEATURES1_MAP);
         cpuid::print_cpu_features(cpu_info.features2, cpuid::CPU_FEATURES2_MAP);
@@ -82,7 +85,10 @@ fn display_cpu_info() {
 
 fn display_multiboot_info(multiboot_info: &multiboot::Info) {
     if multiboot_info.is_memory_size_available() {
-        println!("Lower memory: {}; Upper: {}; Total: {}.", multiboot_info.get_lower_memory(), multiboot_info.get_upper_memory(), multiboot_info.get_lower_memory() + multiboot_info.get_upper_memory());
+        println!("Lower memory: {}; Upper: {}; Total: {}.",
+            multiboot_info.get_lower_memory(),
+            multiboot_info.get_upper_memory(),
+            multiboot_info.get_lower_memory() + multiboot_info.get_upper_memory());
     } else {
         println!("No memory size available from multiboot.");
     }
@@ -90,7 +96,10 @@ fn display_multiboot_info(multiboot_info: &multiboot::Info) {
     if multiboot_info.is_memory_map_available() {
         println!("Memory map:");
         for region in multiboot_info.available_memory_regions() {
-            println!("  0x{:016x} - 0x{:016x} ({} bytes): AVAILABLE", region.addr, region.end_addr(), region.size);
+            println!("  0x{:016x} - 0x{:016x} ({} bytes): AVAILABLE",
+                region.addr,
+                region.end_addr(),
+                region.size);
         }
         println!("Memory available in total: {} bytes.", multiboot_info.total_memory_available());
     } else {

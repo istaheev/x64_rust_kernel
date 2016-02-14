@@ -1,7 +1,7 @@
 [package]
 name = "x64_rust_kernel"
 version = "0.1.0"
-authors = ["Ilya Staheev <ilya.staheev@klarna.com>"]
+authors = ["Ilya Staheev <istaheev@gmail.com>"]
 
 [lib]
 crate-type = ["staticlib"]

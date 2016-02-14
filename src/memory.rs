@@ -59,7 +59,7 @@ pub fn next_page_addr(addr: usize, page_size: usize) -> usize {
 }
 
 
-/* Iterates through all the pages lying in the specified region. */
+/* Iterates through all the pages in in the specified region. */
 struct MemoryPageIterator {
     region:       MemoryRegion,
     page_size:    usize,
